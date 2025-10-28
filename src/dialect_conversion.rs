@@ -1,3 +1,8 @@
+//! Dialect conversion infrastructure.
+//!
+//! This module provides conversion infrastructure similar to MLIR's dialect conversion,
+//! allowing transformations of operations from one dialect to another through pattern matching.
+
 use rustc_hash::FxHashMap;
 use thiserror::Error;
 

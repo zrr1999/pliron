@@ -1,3 +1,8 @@
+//! Pass infrastructure for IR transformations.
+//!
+//! This module provides a pass manager system for running transformation passes
+//! on IR operations.
+
 use crate::context::Context;
 use crate::context::Ptr;
 use crate::operation::Operation;

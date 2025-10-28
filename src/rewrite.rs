@@ -1,3 +1,8 @@
+//! Rewrite pattern management and application.
+//!
+//! This module provides utilities for managing collections of rewrite patterns
+//! and applying them to operations.
+
 use crate::context::Context;
 use crate::context::Ptr;
 use crate::operation::Operation;

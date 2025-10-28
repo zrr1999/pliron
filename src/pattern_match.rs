@@ -1,3 +1,8 @@
+//! Pattern matching and rewriting infrastructure.
+//!
+//! This module provides the core infrastructure for pattern-based rewriting of IR,
+//! including the PatternRewriter trait and various listener mechanisms for tracking changes.
+
 use rustc_hash::FxHashSet;
 use thiserror::Error;
 
