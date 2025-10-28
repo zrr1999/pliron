@@ -53,17 +53,21 @@ impl ConversionTarget {
             .entry(dialect.name.clone())
             .or_insert(LegalizationAction::Illegal);
     }
-    /// Add a dynamically legal operation type.
-    /// 
-    /// **Note**: Dynamic legalization is not yet fully implemented.
-    /// This method is provided for API compatibility but will panic if called.
-    /// Use `add_legal_dialect` or `add_illegal_dialect` for now.
-    #[allow(dead_code)]
-    pub fn add_dynamically_legal_op<OpT: Op>(&mut self, _callback: fn(Ptr<Operation>) -> bool) {
-        // TODO: Store the callback in ConversionTarget and use it during is_legal checks
-        self.set_op_action(OpT::get_opid_static(), LegalizationAction::Dynamic);
-        todo!("Dynamic operation-level legalization not yet implemented - use dialect-level legalization instead");
-    }
+    // NOTE: Dynamic operation-level legalization is not yet implemented.
+    // This method is commented out to prevent misleading API usage.
+    // Use `add_legal_dialect` or `add_illegal_dialect` instead.
+    //
+    // /// Add a dynamically legal operation type.
+    // /// 
+    // /// **Note**: Dynamic legalization is not yet fully implemented.
+    // /// This method is provided for API compatibility but will panic if called.
+    // /// Use `add_legal_dialect` or `add_illegal_dialect` for now.
+    // #[allow(dead_code)]
+    // pub fn add_dynamically_legal_op<OpT: Op>(&mut self, _callback: fn(Ptr<Operation>) -> bool) {
+    //     // TODO: Store the callback in ConversionTarget and use it during is_legal checks
+    //     self.set_op_action(OpT::get_opid_static(), LegalizationAction::Dynamic);
+    //     todo!("Dynamic operation-level legalization not yet implemented - use dialect-level legalization instead");
+    // }
 
     pub fn is_legal(&self, ctx: &Context, op: Ptr<Operation>) -> LegalOpDetails {
         let dialect_name = &op.deref(ctx).get_opid().dialect;

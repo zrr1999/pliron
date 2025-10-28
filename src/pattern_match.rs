@@ -192,7 +192,11 @@ pub trait RewritePattern {
     /// Attempt to match against code rooted at the specified operation.
     /// Returns true if the pattern was matched, false otherwise.
     /// 
-    /// Implementations must override this method or `match_and_rewrite`.
+    /// **Important**: Patterns should either:
+    /// - Override both `match_op` and `rewrite`, OR
+    /// - Override `match_and_rewrite` directly
+    /// 
+    /// The default implementation returns `Ok(false)` (no match).
     fn match_op(&self, _ctx: &Context, _op: Ptr<Operation>) -> Result<bool, anyhow::Error> {
         // Default: pattern doesn't match
         Ok(false)
@@ -203,7 +207,8 @@ pub trait RewritePattern {
     /// builder. If an unexpected error is encountered (an internal
     /// compiler error), the IR is left in a valid state.
     /// 
-    /// Implementations must override this method or `match_and_rewrite`.
+    /// **Important**: This method should be implemented when overriding `match_op`.
+    /// If `match_op` returns true but this method is not implemented, an error will be returned.
     fn rewrite(
         &self,
         _ctx: &mut Context,
@@ -213,7 +218,7 @@ pub trait RewritePattern {
         // Default: no rewrite performed
         // If match_op returned true but rewrite is not implemented, this is likely a bug
         Err(anyhow::anyhow!(
-            "RewritePattern::rewrite not implemented for {}",
+            "RewritePattern::rewrite not implemented for {}. Implement either rewrite() or override match_and_rewrite() directly.",
             self.name()
         ))
     }
