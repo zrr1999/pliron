@@ -19,9 +19,9 @@ use crate::{
         outlined::{self, parse_outlines, postparse_outline},
         parsers::{list_parser, location, spaced},
     },
-    linked_list::{LinkedList, private},
+    linked_list::{ContainsLinkedList, LinkedList, private},
     location::{Located, Location},
-    op::{self, OpId, OpObj},
+    op::{self, Op, OpId, OpObj},
     parsable::{self, Parsable, ParseResult, StateStream},
     printable::{self, Printable},
     region::Region,
@@ -716,5 +716,108 @@ impl Parsable for Operation {
             })
             .parse_stream(state_stream)
             .into()
+    }
+}
+
+/// A utility result that is used to signal how to proceed with an ongoing walk:
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum WalkResult {
+    /// the walk will be interrupted and no more operations, regions
+    /// or blocks will be visited.
+    Interrupt,
+    /// the walk will continue.
+    Advance,
+    /// the walk of the current operation, region or block and their
+    /// nested elements that haven't been visited already will be skipped and will
+    /// continue with the next operation, region or block.
+    Skip,
+}
+
+/// Traversal order for region, block and operation walk utilities.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum WalkOrder {
+    PreOrder,
+    PostOrder,
+}
+
+impl Ptr<Operation> {
+    /// Walk all of the regions, blocks for operations nested under (and including)
+    /// the given operation. The walk order for enclosing regions, blocks and
+    /// operations with respect to their nested ones
+    /// is specified by 'order'. A callback on a block or operation is allowed to erase that block
+    /// or operation only if the walk is in post-order.
+    pub fn walk(
+        &self,
+        ctx: &Context,
+        order: WalkOrder,
+        callback: &mut impl FnMut(Ptr<Operation>) -> WalkResult,
+    ) -> WalkResult {
+        if order == WalkOrder::PreOrder {
+            match callback(*self) {
+                WalkResult::Interrupt => return WalkResult::Interrupt,
+                WalkResult::Skip => return WalkResult::Advance,
+                WalkResult::Advance => (),
+            }
+        }
+        let regions: Vec<_> = self.deref(ctx).regions().collect();
+        for region in regions {
+            let blocks: Vec<Ptr<BasicBlock>> = region.deref(ctx).iter(ctx).collect();
+            for block in blocks {
+                let block_ops: Vec<Ptr<Operation>> = block.deref(ctx).iter(ctx).collect();
+                for nested_op in block_ops {
+                    if nested_op.walk(ctx, order, callback) == WalkResult::Interrupt {
+                        return WalkResult::Interrupt;
+                    }
+                }
+            }
+        }
+        if order == WalkOrder::PostOrder {
+            return callback(*self);
+        }
+        WalkResult::Advance
+    }
+
+    /// Walk all of the regions, blocks for specific operation type nested under (and including)
+    /// the given operation. The walk order for enclosing regions, blocks and
+    /// operations with respect to their nested ones
+    /// is specified by 'order'. A callback on a block or operation is allowed to erase that block
+    /// or operation only if the walk is in post-order.
+    pub fn walk_only<T>(
+        &self,
+        ctx: &Context,
+        order: WalkOrder,
+        callback: &mut impl FnMut(&T) -> WalkResult,
+    ) -> WalkResult
+    where
+        T: Op,
+    {
+        let self_op = Operation::get_op(*self, ctx);
+        if order == WalkOrder::PreOrder {
+            if let Some(t_op) = self_op.downcast_ref::<T>() {
+                match callback(t_op) {
+                    WalkResult::Interrupt => return WalkResult::Interrupt,
+                    WalkResult::Skip => return WalkResult::Advance,
+                    WalkResult::Advance => (),
+                }
+            };
+        }
+        let regions: Vec<_> = self.deref(ctx).regions().collect();
+        for region in regions {
+            let blocks: Vec<Ptr<BasicBlock>> = region.deref(ctx).iter(ctx).collect();
+            for block in blocks {
+                let block_ops: Vec<Ptr<Operation>> = block.deref(ctx).iter(ctx).collect();
+                for nested_op in block_ops {
+                    if nested_op.walk_only(ctx, order, callback) == WalkResult::Interrupt {
+                        return WalkResult::Interrupt;
+                    }
+                }
+            }
+        }
+        if order == WalkOrder::PostOrder {
+            if let Some(t_op) = self_op.downcast_ref::<T>() {
+                return callback(t_op);
+            };
+        }
+        WalkResult::Advance
     }
 }

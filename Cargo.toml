@@ -39,6 +39,7 @@ utf8-chars = "3"
 regex = "1"
 dyn-clone.workspace = true
 log.workspace = true
+anyhow = "1"
 
 [dev-dependencies]
 expect-test.workspace = true
