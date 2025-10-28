@@ -189,23 +189,33 @@ pub trait RewritePattern {
         type_name.to_string()
     }
 
-    /// Attempt to match against code rooted at the specified operation,
+    /// Attempt to match against code rooted at the specified operation.
     /// Returns true if the pattern was matched, false otherwise.
+    /// 
+    /// Implementations must override this method or `match_and_rewrite`.
     fn match_op(&self, _ctx: &Context, _op: Ptr<Operation>) -> Result<bool, anyhow::Error> {
-        unimplemented!("match_op not implemented for {}", self.name());
+        // Default: pattern doesn't match
+        Ok(false)
     }
 
     /// Rewrite the IR rooted at the specified operation with the result of
     /// this pattern, generating any new operations with the specified
     /// builder. If an unexpected error is encountered (an internal
     /// compiler error), the IR is left in a valid state.
+    /// 
+    /// Implementations must override this method or `match_and_rewrite`.
     fn rewrite(
         &self,
         _ctx: &mut Context,
         _op: Ptr<Operation>,
         _rewriter: &mut dyn PatternRewriter,
     ) -> Result<(), anyhow::Error> {
-        unimplemented!("rewrite not implemented for {}", self.name());
+        // Default: no rewrite performed
+        // If match_op returned true but rewrite is not implemented, this is likely a bug
+        Err(anyhow::anyhow!(
+            "RewritePattern::rewrite not implemented for {}",
+            self.name()
+        ))
     }
 
     /// Attempt to match against code rooted at the specified operation.

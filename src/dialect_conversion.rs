@@ -37,8 +37,10 @@ pub struct ConversionTarget {
 }
 
 impl ConversionTarget {
+    // Note: This is currently incomplete and will be implemented in future work
+    #[allow(dead_code)]
     fn set_op_action(&mut self, _op_id: OpId, _action: LegalizationAction) {
-        todo!()
+        todo!("Dynamic operation-level legalization not yet implemented")
     }
 
     pub fn add_legal_dialect(&mut self, dialect: &Dialect) {
@@ -51,9 +53,16 @@ impl ConversionTarget {
             .entry(dialect.name.clone())
             .or_insert(LegalizationAction::Illegal);
     }
+    /// Add a dynamically legal operation type.
+    /// 
+    /// **Note**: Dynamic legalization is not yet fully implemented.
+    /// This method is provided for API compatibility but will panic if called.
+    /// Use `add_legal_dialect` or `add_illegal_dialect` for now.
+    #[allow(dead_code)]
     pub fn add_dynamically_legal_op<OpT: Op>(&mut self, _callback: fn(Ptr<Operation>) -> bool) {
+        // TODO: Store the callback in ConversionTarget and use it during is_legal checks
         self.set_op_action(OpT::get_opid_static(), LegalizationAction::Dynamic);
-        todo!("set legality callback");
+        todo!("Dynamic operation-level legalization not yet implemented - use dialect-level legalization instead");
     }
 
     pub fn is_legal(&self, ctx: &Context, op: Ptr<Operation>) -> LegalOpDetails {
@@ -63,7 +72,10 @@ impl ConversionTarget {
                 LegalizationAction::Legal => LegalOpDetails::Legal {
                     is_recursively_legal: false,
                 },
-                LegalizationAction::Dynamic => todo!(),
+                LegalizationAction::Dynamic => {
+                    // TODO: Use stored callback to determine legality
+                    todo!("Dynamic legalization not yet implemented")
+                }
                 LegalizationAction::Illegal => LegalOpDetails::Illegal,
             },
             None => LegalOpDetails::Unknown,
@@ -171,6 +183,9 @@ pub fn apply_partial_conversion(
     Ok(())
 }
 
+/// Conversion modes for the operation converter.
+/// 
+/// **Note**: Only `Partial` and `Full` modes are currently implemented.
 pub enum OpConversionMode {
     /// In this mode, the conversion will ignore failed conversions to allow
     /// illegal operations to co-exist in the IR.
@@ -180,9 +195,10 @@ pub enum OpConversionMode {
     /// conversion to succeed.
     Full,
 
-    /// In this mode, operations are analyzed for legality. No actual rewrites are
-    /// applied to the operations on success.
-    Analysis,
+    // Analysis mode is not yet implemented
+    // /// In this mode, operations are analyzed for legality. No actual rewrites are
+    // /// applied to the operations on success.
+    // Analysis,
 }
 
 #[derive(Debug, Error)]
@@ -272,7 +288,6 @@ impl OperationConverter {
                     orig_error_msg: err.to_string(),
                     failed_op: op.deref(ctx).disp(ctx).to_string(),
                 })?,
-                OpConversionMode::Analysis => todo!(),
             }
         }
         Ok(())
